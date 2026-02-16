@@ -1,22 +1,49 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {  
     Box,
     Button,
     Stack,
-    TextField
+    TextField,
+    Alert
 } from '@mui/material'
 import Title from './Title'
 import Paragraph from './Paragraph'
+import { submitContact } from '../utils/api.js'
 
 const Details = () => {
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState(null);
+    const [messageType, setMessageType] = useState('success');
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
-        const data = new FormData(event.currentTarget);
-        console.log({
-            email: data.get('email'),
-            phone: data.get('phone'),
-        });
+        setLoading(true);
+        setMessage(null);
+
+        try {
+            const data = new FormData(event.currentTarget);
+            const contactData = {
+                email: data.get('email'),
+                phone: data.get('phone'),
+            };
+
+            const result = await submitContact(contactData);
+
+            if (result.success) {
+                setMessageType('success');
+                setMessage('Submitted!');
+                event.currentTarget.reset();
+            } else {
+                setMessageType('error');
+                setMessage(`Error: ${result.error}`);
+            }
+        } catch (error) {
+            setMessageType('error');
+            setMessage('Submitted!');
+            console.error('Submit error:', error);
+        } finally {
+            setLoading(false);
+        }
     }
 
 
@@ -55,6 +82,15 @@ const Details = () => {
                 mt: 1,
                 py: 2
             }}>
+                {message && (
+                    <Alert 
+                    severity={messageType}
+                    sx={{ mb: 2 }}
+                    onClose={() => setMessage(null)}
+                    >
+                        {message}
+                    </Alert>
+                )}
                 <TextField
                     margin="normal"
                     required
@@ -64,6 +100,7 @@ const Details = () => {
                     name="email"
                     autoComplete="email"
                     autoFocus
+                    disabled={loading}
                 />
                 <TextField
                     margin="normal"
@@ -74,12 +111,14 @@ const Details = () => {
                     type="phone"
                     id="phone"
                     autoComplete="current-phone"
+                    disabled={loading}
                 />
                 <Button 
                 variant="contained" 
                 fullWidth
                 type="submit"
                 size="medium"
+                disabled={loading}
                 sx= {{ 
                     fontSize: '0.9rem',
                     textTransform: 'capitalize', 
@@ -90,10 +129,13 @@ const Details = () => {
                     backgroundColor: '#14192d',
                     "&:hover": {
                         backgroundColor: '#1e2a5a',
+                    },
+                    "&:disabled": {
+                        backgroundColor: '#999',
                     }
                 }}
                 >
-                    send
+                    {loading ? 'Sending...' : 'send'}
                 </Button>
             </Box>
         </Stack>
